@@ -1,0 +1,73 @@
+--- upstream/Panel.qml
++++ Panel.qml
+@@ -8,0 +9 @@
++import "Boost.js" as Boost
+@@ -20,0 +22,4 @@
++  property bool boostAvailable: false
++  property bool boostEnabled: false
++  property string boostBackend: ""
++  property string boostError: ""
+@@ -141,0 +147,8 @@
++    if (!boostProc.running) boostProc.running = true
++  }
++
++  function toggleBoost() {
++    if (!boostAvailable || boostActionProc.running) return
++    boostError = ""
++    boostActionProc.command = Boost.setCommand(boostBackend, !boostEnabled)
++    boostActionProc.running = true
+@@ -229,0 +243,22 @@
++  }
++
++  Process {
++    id: boostProc
++    command: Boost.readCommand()
++    stdout: StdioCollector {
++      waitForEnd: true
++      onStreamFinished: {
++        var state = Boost.parseState(text)
++        root.boostAvailable = state.available
++        root.boostBackend = state.backend
++        if (state.available) root.boostEnabled = state.enabled
++      }
++    }
++  }
++
++  Process {
++    id: boostActionProc
++    onExited: function(exitCode, exitStatus) {
++      if (exitCode !== 0) root.boostError = "Boost change failed or authorization was cancelled."
++      root.refresh()
++    }
+@@ -505,0 +541,31 @@
++
++          Button {
++            visible: root.boostAvailable
++            width: parent.width
++            text: boostActionProc.running ? "Changing turbo boost…"
++              : root.boostEnabled ? "Disable turbo boost" : "Enable turbo boost"
++            fontSize: Style.font.bodySmall
++            foreground: root.bar.foreground
++            fontFamily: root.bar.fontFamily
++            bordered: true
++            active: !root.boostEnabled
++            enabled: !boostActionProc.running
++            onClicked: root.toggleBoost()
++          }
++
++          InfoPair {
++            visible: root.boostAvailable
++            label: "CPU boost"
++            value: root.boostEnabled ? "Enabled" : "Disabled"
++          }
++
++          Text {
++            visible: root.boostError !== ""
++            width: parent.width
++            text: root.boostError
++            textFormat: Text.PlainText
++            wrapMode: Text.WordWrap
++            color: root.bar.foreground
++            font.family: root.bar.fontFamily
++            font.pixelSize: Style.font.bodySmall
++          }
